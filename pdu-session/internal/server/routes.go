@@ -1,8 +1,8 @@
 package server
 
 import (
-	"mini-SMF/pdu-session/config"
-	"mini-SMF/pdu-session/server/handler"
+	"mini-SMF/pdu-session/internal/config"
+	"mini-SMF/pdu-session/internal/server/handler"
 	"net/http"
 )
 

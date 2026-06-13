@@ -1,8 +1,8 @@
 package server
 
 import (
-	"mini-SMF/pdu-session/config"
-	"mini-SMF/pdu-session/server/middleware"
+	"mini-SMF/pdu-session/internal/config"
+	"mini-SMF/pdu-session/internal/server/middleware"
 	"net/http"
 
 	"github.com/rs/zerolog"

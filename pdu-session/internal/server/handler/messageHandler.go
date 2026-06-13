@@ -2,7 +2,7 @@ package handler
 
 import (
 	"fmt"
-	"mini-SMF/pdu-session/config"
+	"mini-SMF/pdu-session/internal/config"
 	"net/http"
 )
 
