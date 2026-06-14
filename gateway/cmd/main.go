@@ -6,7 +6,7 @@ import (
 	"io"
 	"mini-SMF/gateway/internal/config"
 	"mini-SMF/gateway/internal/proxy"
-	"mini-SMF/internal/logger"
+	"mini-SMF/pkg/logger"
 	"net"
 	"net/http"
 	"os"

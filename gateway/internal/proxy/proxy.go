@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"mini-SMF/gateway/internal/config"
-	"mini-SMF/gateway/internal/proxy/middleware"
+	"mini-SMF/gateway/internal/middleware"
 	"net/http"
 
 	"github.com/rs/zerolog"
