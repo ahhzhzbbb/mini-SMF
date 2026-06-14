@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mini-SMF/gateway/internal/config"
+	"mini-SMF/gateway/internal/proxy"
 	"mini-SMF/internal/logger"
-	"mini-SMF/pdu-session/internal/config"
-	"mini-SMF/pdu-session/internal/server"
 	"net"
 	"net/http"
 	"os"
@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func run(ctx context.Context, w io.Writer) error {
+func run(ctx context.Context, w io.Writer, args []string) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
@@ -23,17 +23,16 @@ func run(ctx context.Context, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-
 	logger := logger.NewLogger(cfg.LogLevel)
 
-	srv := server.NewServer(
+	proxy := proxy.NewProxy(
 		cfg,
 		logger,
 	)
 
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort(cfg.Host, cfg.Port),
-		Handler: srv,
+		Handler: proxy,
 	}
 
 	go func() {
@@ -42,6 +41,7 @@ func run(ctx context.Context, w io.Writer) error {
 			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
 		}
 	}()
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -52,6 +52,7 @@ func run(ctx context.Context, w io.Writer) error {
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
+
 		}
 	}()
 
@@ -62,8 +63,9 @@ func run(ctx context.Context, w io.Writer) error {
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Stdout); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+	if err := run(ctx, os.Stdout, os.Args); err != nil {
+		fmt.Println("your gateway is shutting down...")
 		os.Exit(1)
 	}
+
 }
