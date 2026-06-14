@@ -1,1 +1,44 @@
 # mini-SMF
+
+# Project Structure
+```bash
+.
+├── database
+├── gateway
+│   ├── cmd
+│   │   └── main.go
+│   └── internal
+│       ├── config
+│       │   └── config.go
+│       ├── handler
+│       │   └── handler.go
+│       ├── middleware
+│       │   ├── auth.go
+│       │   └── logging.go
+│       ├── proxy
+│       │   ├── proxy.go
+│       │   └── routes.go
+│       └── registry
+│           └── server_registry.go
+├── go.mod
+├── go.sum
+├── pdu-session
+│   ├── cmd
+│   │   └── main.go
+│   └── internal
+│       ├── config
+│       │   └── config.go
+│       ├── handler
+│       │   └── handler.go
+│       ├── middleware
+│       │   └── logging.go
+│       └── server
+│           ├── routes.go
+│           └── server.go
+├── pkg
+│   └── logger
+│       └── logger.go
+└── README.md
+
+19 directories, 18 files
+```
