@@ -23,13 +23,13 @@ func NewInstance(id, serviceName, address string) *Instance {
 }
 
 type Registry struct {
-	mu       sync.RWMutex
-	Services map[string]([]*Instance)
+	mu        sync.RWMutex
+	Instances []*Instance
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
-		Services: make(map[string]([]*Instance)),
+		Instances: make([]*Instance, 0),
 	}
 }
 
@@ -42,18 +42,27 @@ func (r *Registry) Load(serviceName string) error {
 	count := 1
 	for _, ip := range ips {
 		newIntance := NewInstance(fmt.Sprintf("%s-%d", serviceName, count), serviceName, ip.String())
-		r.Services[serviceName] = append(r.Services[serviceName], newIntance)
+		r.Instances = append(r.Instances, newIntance)
 		count++
 	}
 	return nil
 }
 
-func (r *Registry) Register(instance *Instance)
+func (r *Registry) GetAllInstances() []string {
+	fmt.Println(len(r.Instances))
+	var res []string
+	for _, i := range r.Instances {
+		res = append(res, i.Address)
+	}
+	return res
+}
 
-func (r *Registry) Deregister(id string)
+// func (r *Registry) Register(instance *Instance)
 
-func (r *Registry) Heartbeat(id string)
+// func (r *Registry) Deregister(id string)
 
-func (r *Registry) Get(id string) (*Instance, bool)
+// func (r *Registry) Heartbeat(id string)
 
-func (r *Registry) List() []*Instance
+// func (r *Registry) Get(id string) (*Instance, bool)
+
+// func (r *Registry) List() []*Instance

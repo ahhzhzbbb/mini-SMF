@@ -14,6 +14,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	// godotenv.Load("../.env")
 	lv := os.Getenv("LOGLEVEL")
 	var loglv zerolog.Level
 	switch lv {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"mini-SMF/gateway/internal/config"
 	"mini-SMF/gateway/internal/proxy"
+	"mini-SMF/gateway/internal/registry"
 	"mini-SMF/pkg/logger"
 	"net"
 	"net/http"
@@ -25,9 +26,13 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	}
 	logger := logger.NewLogger(cfg.LogLevel)
 
+	registry := registry.NewRegistry()
+	registry.Load(os.Getenv("PDU_SERVICE_NAME"))
+
 	proxy := proxy.NewProxy(
 		cfg,
 		logger,
+		registry,
 	)
 
 	httpServer := &http.Server{
