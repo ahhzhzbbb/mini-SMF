@@ -4,9 +4,11 @@
 ```bash
 .
 ├── database
+├── docker-compose.yml
 ├── gateway
 │   ├── cmd
 │   │   └── main.go
+│   ├── Dockerfile
 │   └── internal
 │       ├── config
 │       │   └── config.go
@@ -18,27 +20,31 @@
 │       ├── proxy
 │       │   ├── proxy.go
 │       │   └── routes.go
-│       └── registry
-│           └── server_registry.go
+│       ├── registry
+│       │   └── registry.go
+│       └── router
+│           └── round_robin.go
 ├── go.mod
 ├── go.sum
 ├── pdu-session
 │   ├── cmd
 │   │   └── main.go
-│   └── internal
-│       ├── config
-│       │   └── config.go
-│       ├── handler
-│       │   └── handler.go
-│       ├── middleware
-│       │   └── logging.go
-│       └── server
-│           ├── routes.go
-│           └── server.go
+│   ├── Dockerfile
+│   ├── internal
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── handler
+│   │   │   └── handler.go
+│   │   ├── middleware
+│   │   │   └── logging.go
+│   │   └── server
+│   │       ├── routes.go
+│   │       └── server.go
+│   └── pdu-session
 ├── pkg
 │   └── logger
 │       └── logger.go
 └── README.md
 
-19 directories, 18 files
+20 directories, 23 files
 ```
