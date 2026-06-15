@@ -12,4 +12,5 @@ func addRoutes(
 ) {
 	mux.Handle("/", handler.HandlerGetMessage())
 	mux.Handle("/config", handler.HandlerGetServerConfigInfo(config))
+	mux.Handle("POST /nsmf-pdusession/v1/sm-contexts", handler.HandlerPDUSessionEstablishment(config))
 }

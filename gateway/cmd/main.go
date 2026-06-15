@@ -29,10 +29,13 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	registry := registry.NewRegistry()
 	registry.Load(os.Getenv("PDU_SERVICE_NAME"))
 
+	current := 0
+
 	proxy := proxy.NewProxy(
 		cfg,
 		logger,
 		registry,
+		&current,
 	)
 
 	httpServer := &http.Server{

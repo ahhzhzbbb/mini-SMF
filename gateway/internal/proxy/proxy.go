@@ -13,12 +13,14 @@ func NewProxy(
 	config *config.Config,
 	logger *zerolog.Logger,
 	registry *registry.Registry,
+	current *int,
 ) http.Handler {
 	mux := http.NewServeMux()
 	addRoute(
 		config,
 		mux,
 		registry,
+		current,
 	)
 	var handler http.Handler
 	handler = mux

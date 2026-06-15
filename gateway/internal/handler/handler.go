@@ -22,3 +22,10 @@ func HandlerGetAllInstanceIp(reg *registry.Registry) http.Handler {
 		}
 	})
 }
+
+func HandlerPDUInstanceEstablishment(router http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("your request is trasforming to instance...\n"))
+		router.ServeHTTP(w, r)
+	})
+}
