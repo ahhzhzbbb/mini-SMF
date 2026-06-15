@@ -12,9 +12,9 @@ func addRoute(
 	config *config.Config,
 	mux *http.ServeMux,
 	registry *registry.Registry,
-	current *int,
+	loadBalancer router.LoadBalancer,
 ) {
-	mux.Handle("/config", handler.HandlerGetProxyConfig(config))
-	mux.Handle("/instances", handler.HandlerGetAllInstanceIp(registry))
-	mux.Handle("POST /nsmf-pdusession/v1/sm-contexts", handler.HandlerPDUInstanceEstablishment(router.RoundRobinLB(current, registry)))
+	mux.Handle("GET /config", handler.HandlerGetProxyConfig(config))
+	mux.Handle("GET /instances", handler.HandlerGetAllInstanceIp(registry))
+	mux.Handle("POST /nsmf-pdusession/v1/sm-contexts", handler.HandlerPDUInstanceEstablishment(loadBalancer, "/nsmf-pdusession/v1/sm-contexts", registry))
 }

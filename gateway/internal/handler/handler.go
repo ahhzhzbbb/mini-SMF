@@ -2,8 +2,11 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"mini-SMF/gateway/internal/config"
 	"mini-SMF/gateway/internal/registry"
+	"mini-SMF/gateway/internal/router"
+	"net"
 	"net/http"
 )
 
@@ -23,9 +26,36 @@ func HandlerGetAllInstanceIp(reg *registry.Registry) http.Handler {
 	})
 }
 
-func HandlerPDUInstanceEstablishment(router http.Handler) http.Handler {
+func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *registry.Registry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("your request is trasforming to instance...\n"))
-		router.ServeHTTP(w, r)
+		w.Write([]byte("Your request is trasforming to instance...\n"))
+		if len(reg.Instances) == 0 {
+			http.Error(w, "There was not any active instance, try reload", http.StatusServiceUnavailable)
+			return
+		}
+
+		instance, err := lb.Next(reg.Instances)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+		}
+
+		instanceAddress := net.JoinHostPort(instance.IpAddr, instance.Port)
+		reqURL := "http://" + instanceAddress + path
+
+		resp, err := http.Post(reqURL, "application/json", r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+		w.WriteHeader(resp.StatusCode)
+
+		w.Write([]byte("RESPONSE: "))
+		_, err = io.Copy(w, resp.Body)
+		if err != nil {
+			fmt.Printf("failed to get response: %v\n", err)
+		}
 	})
 }

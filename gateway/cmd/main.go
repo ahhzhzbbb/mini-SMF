@@ -7,6 +7,7 @@ import (
 	"mini-SMF/gateway/internal/config"
 	"mini-SMF/gateway/internal/proxy"
 	"mini-SMF/gateway/internal/registry"
+	"mini-SMF/gateway/internal/router"
 	"mini-SMF/pkg/logger"
 	"net"
 	"net/http"
@@ -20,22 +21,27 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
+	//config
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
+
+	//logger
 	logger := logger.NewLogger(cfg.LogLevel)
 
+	//registry
 	registry := registry.NewRegistry()
 	registry.Load(os.Getenv("PDU_SERVICE_NAME"))
 
-	current := 0
+	//loadbalancer (Round Robin)
+	var loadBalancer router.LoadBalancer = router.NewRoundRobin(0)
 
 	proxy := proxy.NewProxy(
 		cfg,
 		logger,
 		registry,
-		&current,
+		loadBalancer,
 	)
 
 	httpServer := &http.Server{

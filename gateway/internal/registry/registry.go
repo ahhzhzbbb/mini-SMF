@@ -3,22 +3,27 @@ package registry
 import (
 	"fmt"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
 
 type Instance struct {
-	ID            string
-	ServiceName   string
-	Address       string
-	LastHeartbeat time.Time
+	ID             string
+	ServiceName    string
+	IpAddr         string
+	Port           string
+	Weight         float32
+	ActiveRequests int
+	LastHeartbeat  time.Time
 }
 
-func NewInstance(id, serviceName, address string) *Instance {
+func NewInstance(id, serviceName, address, port string) *Instance {
 	return &Instance{
 		ID:          id,
 		ServiceName: serviceName,
-		Address:     address,
+		IpAddr:      address,
+		Port:        port,
 	}
 }
 
@@ -38,10 +43,11 @@ func (r *Registry) Load(serviceName string) error {
 	if err != nil {
 		return err
 	}
+	port := os.Getenv("PDU_PORT")
 
 	count := 1
 	for _, ip := range ips {
-		newIntance := NewInstance(fmt.Sprintf("%s-%d", serviceName, count), serviceName, ip.String())
+		newIntance := NewInstance(fmt.Sprintf("%s-%d", serviceName, count), serviceName, ip.String(), port)
 		r.Instances = append(r.Instances, newIntance)
 		count++
 	}
@@ -52,7 +58,7 @@ func (r *Registry) GetAllInstances() []string {
 	fmt.Println(len(r.Instances))
 	var res []string
 	for _, i := range r.Instances {
-		res = append(res, i.Address)
+		res = append(res, i.IpAddr)
 	}
 	return res
 }
