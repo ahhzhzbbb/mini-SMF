@@ -8,7 +8,7 @@ import (
 
 type RoundRobin struct {
 	current int
-	mu      *sync.Mutex
+	mu      sync.Mutex
 }
 
 func NewRoundRobin(current int) *RoundRobin {
