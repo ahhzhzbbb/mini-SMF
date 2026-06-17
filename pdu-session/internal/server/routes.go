@@ -10,7 +10,8 @@ func addRoutes(
 	config *config.Config,
 	mux *http.ServeMux,
 ) {
-	mux.Handle("/", handler.HandlerGetMessage())
-	mux.Handle("/config", handler.HandlerGetServerConfigInfo(config))
+	mux.Handle("GET /", handler.HandlerGetMessage())
+	mux.Handle("GET /config", handler.HandlerGetServerConfigInfo(config))
 	mux.Handle("POST /nsmf-pdusession/v1/sm-contexts", handler.HandlerPDUSessionEstablishment(config))
+	mux.Handle("GET /health", handler.HandlerGetHeath(config))
 }

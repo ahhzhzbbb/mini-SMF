@@ -28,7 +28,6 @@ func HandlerGetAllInstanceIp(reg *registry.Registry) http.Handler {
 
 func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *registry.Registry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Your request is trasforming to instance...\n"))
 		if len(reg.Instances) == 0 {
 			http.Error(w, "There was not any active instance, try reload", http.StatusServiceUnavailable)
 			return
@@ -42,12 +41,16 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		instanceAddress := net.JoinHostPort(instance.IpAddr, instance.Port)
 		reqURL := "http://" + instanceAddress + path
 
-		resp, err := http.Post(reqURL, "application/json", r.Body)
+		req, err := http.NewRequestWithContext(r.Context(), "POST", reqURL, r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer resp.Body.Close()
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 		w.WriteHeader(resp.StatusCode)
@@ -56,6 +59,19 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		_, err = io.Copy(w, resp.Body)
 		if err != nil {
 			fmt.Printf("failed to get response: %v\n", err)
+		}
+	})
+}
+
+func HandlerHealthCheck(path string, reg *registry.Registry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if len(reg.Instances) == 0 {
+			http.Error(w, "There was not any active instance, try reload", http.StatusServiceUnavailable)
+			return
+		}
+		if err := reg.HealthCheck(path); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 }

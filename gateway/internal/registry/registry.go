@@ -1,8 +1,10 @@
 package registry
 
 import (
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -28,13 +30,19 @@ func NewInstance(id, serviceName, address, port string) *Instance {
 }
 
 type Registry struct {
-	mu        sync.RWMutex
-	Instances []*Instance
+	mu                  sync.RWMutex
+	Instances           []*Instance
+	CycleHeathCheckTime int          //second
+	ClientHealthCheck   *http.Client //client representative to send health check request:V
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
-		Instances: make([]*Instance, 0),
+		Instances:           make([]*Instance, 0),
+		CycleHeathCheckTime: 1,
+		ClientHealthCheck: &http.Client{
+			Timeout: 1 * time.Millisecond,
+		},
 	}
 }
 
@@ -61,6 +69,38 @@ func (r *Registry) GetAllInstances() []string {
 		res = append(res, i.IpAddr)
 	}
 	return res
+}
+
+func (r *Registry) Remove(index int) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if index < 0 || index >= len(r.Instances) {
+		return errors.New("out of range")
+	}
+
+	r.Instances = append(r.Instances[:index], r.Instances[index+1:]...)
+
+	return nil
+}
+
+func (r *Registry) HealthCheck(path string) error {
+	for idx, instance := range r.Instances {
+		address := net.JoinHostPort(instance.IpAddr, instance.Port)
+		reqURL := "http://" + address + path //http://localhost:8080/heath
+
+		resp, err := r.ClientHealthCheck.Get(reqURL)
+		if err != nil {
+			r.Remove(idx)
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			r.Remove(idx)
+		}
+	}
+	return nil
 }
 
 // func (r *Registry) Register(instance *Instance)
