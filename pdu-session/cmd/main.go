@@ -55,6 +55,8 @@ func run(ctx context.Context, w io.Writer) error {
 		}
 	}()
 
+	server.Register("gateway")
+
 	wg.Wait()
 
 	return nil

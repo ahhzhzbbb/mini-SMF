@@ -34,6 +34,7 @@ type Registry struct {
 	Instances           []*Instance
 	CycleHeathCheckTime int          //second
 	ClientHealthCheck   *http.Client //client representative to send health check request:V
+	ActiveInstance      map[string]bool
 }
 
 func NewRegistry() *Registry {
@@ -41,23 +42,27 @@ func NewRegistry() *Registry {
 		Instances:           make([]*Instance, 0),
 		CycleHeathCheckTime: 1,
 		ClientHealthCheck: &http.Client{
-			Timeout: 1 * time.Millisecond,
+			Timeout: 100 * time.Millisecond,
 		},
+		ActiveInstance: make(map[string]bool),
 	}
 }
 
 func (r *Registry) Load(serviceName string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	ips, err := net.LookupIP(serviceName)
 	if err != nil {
 		return err
 	}
 	port := os.Getenv("PDU_PORT")
 
-	count := 1
 	for _, ip := range ips {
-		newIntance := NewInstance(fmt.Sprintf("%s-%d", serviceName, count), serviceName, ip.String(), port)
-		r.Instances = append(r.Instances, newIntance)
-		count++
+		if r.ActiveInstance[ip.String()] == false {
+			newIntance := NewInstance(fmt.Sprintf("%s-%s:%s", serviceName, ip, port), serviceName, ip.String(), port)
+			r.Instances = append(r.Instances, newIntance)
+			r.ActiveInstance[ip.String()] = true
+		}
 	}
 	return nil
 }
@@ -79,6 +84,8 @@ func (r *Registry) Remove(index int) error {
 		return errors.New("out of range")
 	}
 
+	ip := r.Instances[index].IpAddr
+	r.ActiveInstance[ip] = false
 	r.Instances = append(r.Instances[:index], r.Instances[index+1:]...)
 
 	return nil
@@ -103,12 +110,28 @@ func (r *Registry) HealthCheck(path string) error {
 	return nil
 }
 
-// func (r *Registry) Register(instance *Instance)
+func (r *Registry) Register(serviceName, ip, port string) error {
+	// fmt.Println("registering...")
+	// name, err := net.LookupAddr(net.JoinHostPort(ip, port))
+	// if err != nil {
+	// 	fmt.Printf("Cant find address with %s\n", fmt.Sprintf("%s:%s", ip, port))
+	// 	return err
+	// }
+	// fmt.Println("found!!!")
+	// if len(name) != 0 {
+	// 	fmt.Println("Duplicate")
+	// 	return errors.New("Duplicate address, this instance exited in registry")
+	// }
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-// func (r *Registry) Deregister(id string)
+	if r.ActiveInstance[ip] {
+		return errors.New("this instance exited in registry")
+	}
 
-// func (r *Registry) Heartbeat(id string)
-
-// func (r *Registry) Get(id string) (*Instance, bool)
-
-// func (r *Registry) List() []*Instance
+	newInstance := NewInstance(fmt.Sprintf("%s-%s:%s", serviceName, ip, port), serviceName, ip, port)
+	r.Instances = append(r.Instances, newInstance)
+	r.ActiveInstance[ip] = true
+	fmt.Println("register successful")
+	return nil
+}

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"mini-SMF/gateway/internal/config"
@@ -28,8 +29,10 @@ func HandlerGetAllInstanceIp(reg *registry.Registry) http.Handler {
 
 func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *registry.Registry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Gateway trả 503: {"cause":
+		// "NO_BACKEND_AVAILABLE"}.
 		if len(reg.Instances) == 0 {
-			http.Error(w, "There was not any active instance, try reload", http.StatusServiceUnavailable)
+			http.Error(w, "NO_BACKEND_AVAILABLE", http.StatusServiceUnavailable)
 			return
 		}
 
@@ -73,5 +76,27 @@ func HandlerHealthCheck(path string, reg *registry.Registry) http.Handler {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	})
+}
+
+func HandlerRegister(reg *registry.Registry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		type registerRequest struct {
+			ServiceName string `json:"service_name"`
+			Ip          string `json:"ip"`
+			Port        string `json:"port"`
+		}
+
+		var req registerRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := reg.Register(req.ServiceName, req.Ip, req.Port); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
 	})
 }
