@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mini-SMF/gateway/internal/config"
@@ -8,6 +11,7 @@ import (
 	"mini-SMF/gateway/internal/router"
 	"net"
 	"net/http"
+	"sync/atomic"
 )
 
 func HandlerGetProxyConfig(config *config.Config) http.Handler {
@@ -28,9 +32,10 @@ func HandlerGetAllInstanceIp(reg *registry.Registry) http.Handler {
 
 func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *registry.Registry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Your request is trasforming to instance...\n"))
-		if len(reg.Instances) == 0 {
-			http.Error(w, "There was not any active instance, try reload", http.StatusServiceUnavailable)
+		// Gateway trả 503: {"cause":
+		// "NO_BACKEND_AVAILABLE"}.
+		if reg.IsEmpty() {
+			http.Error(w, "NO_BACKEND_AVAILABLE", http.StatusServiceUnavailable)
 			return
 		}
 
@@ -42,9 +47,24 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		instanceAddress := net.JoinHostPort(instance.IpAddr, instance.Port)
 		reqURL := "http://" + instanceAddress + path
 
-		resp, err := http.Post(reqURL, "application/json", r.Body)
+		req, err := http.NewRequestWithContext(r.Context(), "POST", reqURL, r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			if errors.Is(r.Context().Err(), context.DeadlineExceeded) {
+				newTimeoutCount := atomic.AddInt64(&instance.TimeoutRequests, -1)
+				fmt.Printf("timeout number: %d\n", newTimeoutCount)
+				if newTimeoutCount <= 0 {
+					if err := reg.RemoveInstance(instance); err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+				}
+			}
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
 			return
 		}
 		defer resp.Body.Close()
@@ -57,5 +77,41 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		if err != nil {
 			fmt.Printf("failed to get response: %v\n", err)
 		}
+		atomic.StoreInt64(&instance.TimeoutRequests, 3)
+	})
+}
+
+func HandlerHealthCheck(path string, reg *registry.Registry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if len(reg.Instances) == 0 {
+			http.Error(w, "There was not any active instance, try reload", http.StatusServiceUnavailable)
+			return
+		}
+		if err := reg.HealthCheck(path); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func HandlerRegister(reg *registry.Registry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		type registerRequest struct {
+			ServiceName string `json:"service_name"`
+			Ip          string `json:"ip"`
+			Port        string `json:"port"`
+		}
+
+		var req registerRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := reg.Register(req.ServiceName, req.Ip, req.Port); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
 	})
 }

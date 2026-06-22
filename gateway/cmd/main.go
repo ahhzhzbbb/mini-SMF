@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"mini-SMF/gateway/internal/config"
 	"mini-SMF/gateway/internal/proxy"
 	"mini-SMF/gateway/internal/registry"
@@ -67,6 +68,25 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
 
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(
+			time.Duration(registry.CycleHeathCheckTime) * time.Second,
+		)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case <-ticker.C:
+				if err := registry.HealthCheck("/health"); err != nil {
+					log.Printf("health check failed: %v", err)
+				}
+			}
 		}
 	}()
 

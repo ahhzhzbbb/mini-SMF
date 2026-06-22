@@ -29,3 +29,14 @@ func HandlerPDUSessionEstablishment(config *config.Config) http.Handler {
 			instanceID, config.Host, config.Port)
 	})
 }
+
+func HandlerGetHeath(config *config.Config) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		instanceID, err := os.Hostname()
+		if err != nil {
+			instanceID = "unknown-node"
+		}
+		fmt.Fprintf(w, "Hello Client, I am instance: %s, (Listening on %s:%s)",
+			instanceID, config.Host, config.Port)
+	})
+}

@@ -17,4 +17,6 @@ func addRoute(
 	mux.Handle("GET /config", handler.HandlerGetProxyConfig(config))
 	mux.Handle("GET /instances", handler.HandlerGetAllInstanceIp(registry))
 	mux.Handle("POST /nsmf-pdusession/v1/sm-contexts", handler.HandlerPDUInstanceEstablishment(loadBalancer, "/nsmf-pdusession/v1/sm-contexts", registry))
+	mux.Handle("GET /health", handler.HandlerHealthCheck("/heath", registry))
+	mux.Handle("POST /register", handler.HandlerRegister(registry))
 }

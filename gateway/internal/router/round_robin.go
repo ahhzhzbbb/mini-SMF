@@ -26,7 +26,7 @@ func (rr *RoundRobin) Next(instances []*registry.Instance) (*registry.Instance, 
 		return nil, errors.New("no active instances available")
 	}
 	idx := rr.current % n
-	rr.current++
+	rr.current = (rr.current + 1) % n
 	return instances[idx], nil
 }
 
