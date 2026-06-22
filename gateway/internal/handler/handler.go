@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mini-SMF/gateway/internal/config"
@@ -9,6 +11,7 @@ import (
 	"mini-SMF/gateway/internal/router"
 	"net"
 	"net/http"
+	"sync/atomic"
 )
 
 func HandlerGetProxyConfig(config *config.Config) http.Handler {
@@ -31,7 +34,7 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Gateway trả 503: {"cause":
 		// "NO_BACKEND_AVAILABLE"}.
-		if len(reg.Instances) == 0 {
+		if reg.IsEmpty() {
 			http.Error(w, "NO_BACKEND_AVAILABLE", http.StatusServiceUnavailable)
 			return
 		}
@@ -51,9 +54,20 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			if errors.Is(r.Context().Err(), context.DeadlineExceeded) {
+				newTimeoutCount := atomic.AddInt64(&instance.TimeoutRequests, -1)
+				fmt.Printf("timeout number: %d\n", newTimeoutCount)
+				if newTimeoutCount <= 0 {
+					if err := reg.RemoveInstance(instance); err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+				}
+			}
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
 			return
 		}
+		defer resp.Body.Close()
 
 		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 		w.WriteHeader(resp.StatusCode)
@@ -63,6 +77,7 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		if err != nil {
 			fmt.Printf("failed to get response: %v\n", err)
 		}
+		atomic.StoreInt64(&instance.TimeoutRequests, 3)
 	})
 }
 

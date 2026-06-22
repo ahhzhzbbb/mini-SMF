@@ -11,21 +11,23 @@ import (
 )
 
 type Instance struct {
-	ID             string
-	ServiceName    string
-	IpAddr         string
-	Port           string
-	Weight         float32
-	ActiveRequests int
-	LastHeartbeat  time.Time
+	ID              string
+	ServiceName     string
+	IpAddr          string
+	Port            string
+	Weight          float32
+	ActiveRequests  int
+	TimeoutRequests int64
+	LastHeartbeat   time.Time
 }
 
 func NewInstance(id, serviceName, address, port string) *Instance {
 	return &Instance{
-		ID:          id,
-		ServiceName: serviceName,
-		IpAddr:      address,
-		Port:        port,
+		ID:              id,
+		ServiceName:     serviceName,
+		IpAddr:          address,
+		Port:            port,
+		TimeoutRequests: 3,
 	}
 }
 
@@ -67,6 +69,12 @@ func (r *Registry) Load(serviceName string) error {
 	return nil
 }
 
+func (r *Registry) IsEmpty() bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.Instances) == 0
+}
+
 func (r *Registry) GetAllInstances() []string {
 	fmt.Println(len(r.Instances))
 	var res []string
@@ -74,6 +82,18 @@ func (r *Registry) GetAllInstances() []string {
 		res = append(res, i.IpAddr)
 	}
 	return res
+}
+
+func (r *Registry) GetIndexOfInstance(instance *Instance) (int, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for i, ins := range r.Instances {
+		if ins.IpAddr == instance.IpAddr {
+			return i, nil
+		}
+	}
+	return -1, errors.New("Your instance didnt exist in registry")
 }
 
 func (r *Registry) Remove(index int) error {
@@ -89,6 +109,21 @@ func (r *Registry) Remove(index int) error {
 	r.Instances = append(r.Instances[:index], r.Instances[index+1:]...)
 
 	return nil
+}
+
+func (r *Registry) RemoveInstance(instance *Instance) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for i, ins := range r.Instances {
+		if ins.IpAddr == instance.IpAddr {
+			ip := r.Instances[i].IpAddr
+			r.ActiveInstance[ip] = false
+			r.Instances = append(r.Instances[:i], r.Instances[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("Your instance didnt exist in registry")
 }
 
 func (r *Registry) HealthCheck(path string) error {
