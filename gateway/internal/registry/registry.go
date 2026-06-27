@@ -40,11 +40,18 @@ type Registry struct {
 }
 
 func NewRegistry() *Registry {
+	transport := &http.Transport{
+		Protocols: new(http.Protocols),
+	}
+
+	transport.Protocols.SetUnencryptedHTTP2(true)
+
 	return &Registry{
 		Instances:           make([]*Instance, 0),
 		CycleHeathCheckTime: 1,
 		ClientHealthCheck: &http.Client{
-			Timeout: 100 * time.Millisecond,
+			Timeout:   100 * time.Millisecond,
+			Transport: transport,
 		},
 		ActiveInstance: make(map[string]bool),
 	}
@@ -127,19 +134,19 @@ func (r *Registry) RemoveInstance(instance *Instance) error {
 }
 
 func (r *Registry) HealthCheck(path string) error {
-	for idx, instance := range r.Instances {
+	for _, instance := range r.Instances {
 		address := net.JoinHostPort(instance.IpAddr, instance.Port)
 		reqURL := "http://" + address + path //http://localhost:8080/heath
 
 		resp, err := r.ClientHealthCheck.Get(reqURL)
 		if err != nil {
-			r.Remove(idx)
+			r.RemoveInstance(instance)
 			return err
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			r.Remove(idx)
+			r.RemoveInstance(instance)
 		}
 	}
 	return nil

@@ -1,0 +1,16 @@
+curl -i --http2-prior-knowledge \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "supi": "imsi-452040000000001",
+    "gpsi": "msisdn-84900000001",
+    "pduSessionId": 1,
+    "dnn": "v-internet",
+    "sNssai": {
+      "sst": 1,
+      "sd": "000001"
+    },
+    "servingNfId": "2ab2b5a9-68e8-4ee6-b939-024c109b520c",
+    "anType": "3GPP_ACCESS"
+  }' \
+  http://localhost:8080/nsmf-pdusession/v1/sm-contexts

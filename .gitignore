@@ -1,2 +1,6 @@
 */.env
 .env
+gateway/server.crt
+gateway/server.key
+pdu-session/server.crt
+pdu-session/server.key
