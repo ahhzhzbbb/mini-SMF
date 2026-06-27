@@ -36,7 +36,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	registry.Load(os.Getenv("PDU_SERVICE_NAME"))
 
 	//loadbalancer (Round Robin)
-	var loadBalancer router.LoadBalancer = router.NewRoundRobin(0)
+	var loadBalancer router.LoadBalancer = router.NewWeightRoundRobin()
 
 	proxy := proxy.NewProxy(
 		cfg,

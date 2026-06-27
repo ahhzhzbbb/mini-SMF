@@ -18,15 +18,15 @@ func NewRoundRobin(current int64) *RoundRobin {
 	}
 }
 
-func (rr *RoundRobin) Next(instances []*registry.Instance) (*registry.Instance, error) {
-	n := len(instances)
+func (rr *RoundRobin) Next(reg *registry.Registry) (*registry.Instance, error) {
+	n := len(reg.Instances)
 	if n == 0 {
 		return nil, errors.New("no active instances available")
 	}
 
 	idx := atomic.AddInt64(&rr.current, 1)
 
-	return instances[idx%int64(n)], nil
+	return reg.Instances[idx%int64(n)], nil
 }
 
 // func RoundRobinLB(current *int, path string, registry *registry.Registry) http.Handler {

@@ -15,18 +15,20 @@ type Instance struct {
 	ServiceName     string
 	IpAddr          string
 	Port            string
-	Weight          float32
+	Weight          int
+	CurrentWeight   int
 	ActiveRequests  int
 	TimeoutRequests int64
-	LastHeartbeat   time.Time
 }
 
-func NewInstance(id, serviceName, address, port string) *Instance {
+func NewInstance(id, serviceName, address, port string, weight int) *Instance {
 	return &Instance{
 		ID:              id,
 		ServiceName:     serviceName,
 		IpAddr:          address,
 		Port:            port,
+		Weight:          weight,
+		CurrentWeight:   0,
 		TimeoutRequests: 3,
 	}
 }
@@ -34,9 +36,10 @@ func NewInstance(id, serviceName, address, port string) *Instance {
 type Registry struct {
 	mu                  sync.RWMutex
 	Instances           []*Instance
-	CycleHeathCheckTime int          //second
-	ClientHealthCheck   *http.Client //client representative to send health check request:V
-	ActiveInstance      map[string]bool
+	CycleHeathCheckTime int             //second
+	ClientHealthCheck   *http.Client    //client representative to send health check request:V
+	ActiveInstance      map[string]bool //
+	SumOfWeight         int             //smooth Weightwd Round Robin
 }
 
 func NewRegistry() *Registry {
@@ -54,6 +57,7 @@ func NewRegistry() *Registry {
 			Transport: transport,
 		},
 		ActiveInstance: make(map[string]bool),
+		SumOfWeight:    0,
 	}
 }
 
@@ -68,7 +72,7 @@ func (r *Registry) Load(serviceName string) error {
 
 	for _, ip := range ips {
 		if r.ActiveInstance[ip.String()] == false {
-			newIntance := NewInstance(fmt.Sprintf("%s-%s:%s", serviceName, ip, port), serviceName, ip.String(), port)
+			newIntance := NewInstance(fmt.Sprintf("%s-%s:%s", serviceName, ip, port), serviceName, ip.String(), port, 3)
 			r.Instances = append(r.Instances, newIntance)
 			r.ActiveInstance[ip.String()] = true
 		}
@@ -113,6 +117,7 @@ func (r *Registry) Remove(index int) error {
 
 	ip := r.Instances[index].IpAddr
 	r.ActiveInstance[ip] = false
+	r.SumOfWeight -= r.Instances[index].Weight
 	r.Instances = append(r.Instances[:index], r.Instances[index+1:]...)
 
 	return nil
@@ -127,6 +132,7 @@ func (r *Registry) RemoveInstance(instance *Instance) error {
 			ip := r.Instances[i].IpAddr
 			r.ActiveInstance[ip] = false
 			r.Instances = append(r.Instances[:i], r.Instances[i+1:]...)
+			r.SumOfWeight -= instance.Weight
 			return nil
 		}
 	}
@@ -152,7 +158,7 @@ func (r *Registry) HealthCheck(path string) error {
 	return nil
 }
 
-func (r *Registry) Register(serviceName, ip, port string) error {
+func (r *Registry) Register(serviceName, ip, port string, weight int) error {
 	// fmt.Println("registering...")
 	// name, err := net.LookupAddr(net.JoinHostPort(ip, port))
 	// if err != nil {
@@ -171,9 +177,10 @@ func (r *Registry) Register(serviceName, ip, port string) error {
 		return errors.New("this instance exited in registry")
 	}
 
-	newInstance := NewInstance(fmt.Sprintf("%s-%s:%s", serviceName, ip, port), serviceName, ip, port)
+	newInstance := NewInstance(fmt.Sprintf("%s-%s:%s", serviceName, ip, port), serviceName, ip, port, weight)
 	r.Instances = append(r.Instances, newInstance)
 	r.ActiveInstance[ip] = true
+	r.SumOfWeight += weight
 	fmt.Println("register successful")
 	return nil
 }

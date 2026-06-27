@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 func getLocalAddress() (string, error) {
@@ -35,6 +36,7 @@ func Register(gatewayService string) error {
 		ServiceName string `json:"service_name"`
 		Ip          string `json:"ip"`
 		Port        string `json:"port"`
+		Weight      int    `json:"weight"`
 	}
 
 	ip := ips[rand.IntN(len(ips))]
@@ -46,11 +48,18 @@ func Register(gatewayService string) error {
 		return err
 	}
 
+	w, err := strconv.Atoi(os.Getenv("WEIGHT"))
+	if err != nil {
+		return nil
+	}
+
 	bodyData := reqBody{
 		ServiceName: "pdu-session",
 		Ip:          localIP,
 		Port:        "8081",
+		Weight:      w,
 	}
+
 	jsonBytes, err := json.Marshal(bodyData)
 	if err != nil {
 		return err

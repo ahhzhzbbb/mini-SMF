@@ -5,46 +5,56 @@ networks:
     driver: bridge
 
 services:
-  pdu-session:
+  pdu-session-1:
     build:
       context: .
       dockerfile: pdu-session/Dockerfile
+    hostname: pdu-session-1
     environment:
       - HOST=0.0.0.0
       - PORT=8081
       - LOGLEVEL=DEBUG
       - INSTANCE_ID=pdu-session-node
       - GW_PORT=8080
+      - WEIGHT=3
+    depends_on:
+      - gateway
     networks:
       - smf-network
 
-  # pdu-session-2:
-  #   build:
-  #     context: .
-  #     dockerfile: pdu-session/Dockerfile
-  #   hostname: pdu-session-2
-  #   environment:
-  #     - HOST=0.0.0.0
-  #     - PORT=8081
-  #     - LOGLEVEL=DEBUG
-  #     - INSTANCE_ID=pdu-session-node
-  #     - GW_PORT=8080
-  #   networks:
-  #   - smf-network
+  pdu-session-2:
+    build:
+      context: .
+      dockerfile: pdu-session/Dockerfile
+    hostname: pdu-session-2
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8081
+      - LOGLEVEL=DEBUG
+      - INSTANCE_ID=pdu-session-node
+      - GW_PORT=8080
+      - WEIGHT=2
+    depends_on:
+      - gateway
+    networks:
+    - smf-network
 
-  # pdu-session-3:
-  #   build:
-  #     context: .
-  #     dockerfile: pdu-session/Dockerfile
-  #   hostname: pdu-session-3
-  #   environment:
-  #     - HOST=0.0.0.0
-  #     - PORT=8081
-  #     - LOGLEVEL=DEBUG
-  #     - INSTANCE_ID=pdu-session-node
-  #     - GW_PORT=8080
-  #   networks:
-  #   - smf-network
+  pdu-session-3:
+    build:
+      context: .
+      dockerfile: pdu-session/Dockerfile
+    hostname: pdu-session-3
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8081
+      - LOGLEVEL=DEBUG
+      - INSTANCE_ID=pdu-session-node
+      - GW_PORT=8080
+      - WEIGHT=1
+    depends_on:
+      - gateway
+    networks:
+    - smf-network
 
   gateway:
     build:
@@ -58,7 +68,9 @@ services:
       - LOGLEVEL=DEBUG
       - PDU_SERVICE_NAME=pdu-session
       - PDU_PORT=8081
-    depends_on:
-      - pdu-session
+    # depends_on:
+    #   - pdu-session-1
+    #   - pdu-session-2
+    #   - pdu-session-3
     networks:
       - smf-network

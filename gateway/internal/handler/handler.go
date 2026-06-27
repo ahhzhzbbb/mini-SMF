@@ -39,7 +39,7 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 			return
 		}
 
-		instance, err := lb.Next(reg.Instances)
+		instance, err := lb.Next(reg)
 		if err != nil {
 			w.Write([]byte(err.Error()))
 			return
@@ -111,6 +111,7 @@ func HandlerRegister(reg *registry.Registry) http.Handler {
 			ServiceName string `json:"service_name"`
 			Ip          string `json:"ip"`
 			Port        string `json:"port"`
+			Weight      int    `json:"weight"`
 		}
 
 		var req registerRequest
@@ -119,7 +120,7 @@ func HandlerRegister(reg *registry.Registry) http.Handler {
 			return
 		}
 
-		if err := reg.Register(req.ServiceName, req.Ip, req.Port); err != nil {
+		if err := reg.Register(req.ServiceName, req.Ip, req.Port, req.Weight); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
