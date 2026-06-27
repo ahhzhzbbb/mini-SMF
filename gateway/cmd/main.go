@@ -50,6 +50,10 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 		Handler: proxy,
 	}
 
+	httpServer.Protocols = new(http.Protocols)
+	// httpServer.Protocols.SetHTTP1(true)
+	httpServer.Protocols.SetUnencryptedHTTP2(true)
+
 	go func() {
 		fmt.Fprintf(w, "listening on %s\n", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {

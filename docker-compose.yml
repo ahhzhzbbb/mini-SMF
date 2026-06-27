@@ -18,6 +18,34 @@ services:
     networks:
       - smf-network
 
+  # pdu-session-2:
+  #   build:
+  #     context: .
+  #     dockerfile: pdu-session/Dockerfile
+  #   hostname: pdu-session-2
+  #   environment:
+  #     - HOST=0.0.0.0
+  #     - PORT=8081
+  #     - LOGLEVEL=DEBUG
+  #     - INSTANCE_ID=pdu-session-node
+  #     - GW_PORT=8080
+  #   networks:
+  #   - smf-network
+
+  # pdu-session-3:
+  #   build:
+  #     context: .
+  #     dockerfile: pdu-session/Dockerfile
+  #   hostname: pdu-session-3
+  #   environment:
+  #     - HOST=0.0.0.0
+  #     - PORT=8081
+  #     - LOGLEVEL=DEBUG
+  #     - INSTANCE_ID=pdu-session-node
+  #     - GW_PORT=8080
+  #   networks:
+  #   - smf-network
+
   gateway:
     build:
       context: .

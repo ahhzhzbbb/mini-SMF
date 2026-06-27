@@ -42,6 +42,7 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		instance, err := lb.Next(reg.Instances)
 		if err != nil {
 			w.Write([]byte(err.Error()))
+			return
 		}
 
 		instanceAddress := net.JoinHostPort(instance.IpAddr, instance.Port)
@@ -52,7 +53,17 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		resp, err := http.DefaultClient.Do(req)
+		tr := &http.Transport{
+			Protocols: new(http.Protocols),
+		}
+
+		tr.Protocols.SetUnencryptedHTTP2(true)
+
+		client := &http.Client{
+			Transport: tr,
+		}
+
+		resp, err := client.Do(req)
 		if err != nil {
 			if errors.Is(r.Context().Err(), context.DeadlineExceeded) {
 				newTimeoutCount := atomic.AddInt64(&instance.TimeoutRequests, -1)
@@ -72,7 +83,7 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 		w.WriteHeader(resp.StatusCode)
 
-		w.Write([]byte("RESPONSE: "))
+		w.Write([]byte("RESPONSE: \n"))
 		_, err = io.Copy(w, resp.Body)
 		if err != nil {
 			fmt.Printf("failed to get response: %v\n", err)

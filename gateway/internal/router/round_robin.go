@@ -4,30 +4,29 @@ import (
 	"errors"
 	"mini-SMF/gateway/internal/registry"
 	"sync"
+	"sync/atomic"
 )
 
 type RoundRobin struct {
-	current int
+	current int64
 	mu      sync.Mutex
 }
 
-func NewRoundRobin(current int) *RoundRobin {
+func NewRoundRobin(current int64) *RoundRobin {
 	return &RoundRobin{
 		current: current,
 	}
 }
 
 func (rr *RoundRobin) Next(instances []*registry.Instance) (*registry.Instance, error) {
-	rr.mu.Lock()
-	defer rr.mu.Unlock()
-
 	n := len(instances)
 	if n == 0 {
 		return nil, errors.New("no active instances available")
 	}
-	idx := rr.current % n
-	rr.current = (rr.current + 1) % n
-	return instances[idx], nil
+
+	idx := atomic.AddInt64(&rr.current, 1)
+
+	return instances[idx%int64(n)], nil
 }
 
 // func RoundRobinLB(current *int, path string, registry *registry.Registry) http.Handler {

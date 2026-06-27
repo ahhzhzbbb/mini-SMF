@@ -63,7 +63,17 @@ func Register(gatewayService string) error {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{
+		Protocols: new(http.Protocols),
+	}
+
+	tr.Protocols.SetUnencryptedHTTP2(true)
+
+	client := &http.Client{
+		Transport: tr,
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
