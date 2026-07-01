@@ -7,10 +7,11 @@ import (
 )
 
 type Config struct {
-	Host        string
-	Port        string
-	LogLevel    zerolog.Level
-	DatabaseURL string
+	Host            string
+	Port            string
+	LogLevel        zerolog.Level
+	DatabaseURL     string
+	TimeoutDuration int
 }
 
 func Load() (*Config, error) {
@@ -26,9 +27,10 @@ func Load() (*Config, error) {
 		loglv = zerolog.ErrorLevel
 	}
 	return &Config{
-		Host:        os.Getenv("HOST"),
-		Port:        os.Getenv("PORT"),
-		LogLevel:    loglv,
-		DatabaseURL: os.Getenv("DB_URL"),
+		Host:            os.Getenv("HOST"),
+		Port:            os.Getenv("PORT"),
+		LogLevel:        loglv,
+		DatabaseURL:     os.Getenv("DB_URL"),
+		TimeoutDuration: 2,
 	}, nil
 }

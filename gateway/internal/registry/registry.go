@@ -17,7 +17,7 @@ type Instance struct {
 	Port            string
 	Weight          int
 	CurrentWeight   int
-	ActiveRequests  int
+	ActiveRequests  int64
 	TimeoutRequests int64
 }
 

@@ -27,6 +27,6 @@ func NewProxy(
 	handler = mux
 	handler = middleware.LoggingMiddleware(logger, handler)
 	handler = middleware.AuthMiddleware(handler)
-	handler = middleware.CheckingTimeoutMiddleware(2, handler)
+	handler = middleware.CheckingTimeoutMiddleware(config.TimeoutDuration, handler)
 	return handler
 }

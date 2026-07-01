@@ -63,6 +63,7 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 			Transport: tr,
 		}
 
+		atomic.AddInt64(&instance.ActiveRequests, 1)
 		resp, err := client.Do(req)
 		if err != nil {
 			if errors.Is(r.Context().Err(), context.DeadlineExceeded) {
@@ -78,6 +79,7 @@ func HandlerPDUInstanceEstablishment(lb router.LoadBalancer, path string, reg *r
 			http.Error(w, err.Error(), http.StatusGatewayTimeout)
 			return
 		}
+		atomic.AddInt64(&instance.ActiveRequests, -1)
 		defer resp.Body.Close()
 
 		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))

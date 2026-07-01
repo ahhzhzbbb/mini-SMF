@@ -62,6 +62,8 @@ func HandlerPDUSessionEstablishment(config *config.Config) http.Handler {
 		rsp.HandledBy = instanceID
 		rsp.Status = "ACTIVE"
 
+		// time.Sleep(6 * time.Second)
+
 		if err := json.NewEncoder(w).Encode(&rsp); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
