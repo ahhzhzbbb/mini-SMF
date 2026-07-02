@@ -6,6 +6,7 @@ import (
 	"mini-SMF/pdu-session/internal/config"
 	"net/http"
 	"os"
+	"time"
 )
 
 func HandlerGetMessage() http.Handler {
@@ -62,7 +63,7 @@ func HandlerPDUSessionEstablishment(config *config.Config) http.Handler {
 		rsp.HandledBy = instanceID
 		rsp.Status = "ACTIVE"
 
-		// time.Sleep(6 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		if err := json.NewEncoder(w).Encode(&rsp); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

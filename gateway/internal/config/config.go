@@ -31,6 +31,6 @@ func Load() (*Config, error) {
 		Port:            os.Getenv("PORT"),
 		LogLevel:        loglv,
 		DatabaseURL:     os.Getenv("DB_URL"),
-		TimeoutDuration: 2,
+		TimeoutDuration: 3,
 	}, nil
 }

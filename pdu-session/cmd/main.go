@@ -12,11 +12,16 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
 func run(ctx context.Context, w io.Writer) error {
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	ctx, cancel := signal.NotifyContext(
+		ctx,
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
 	defer cancel()
 
 	cfg, err := config.Load()
@@ -53,7 +58,7 @@ func run(ctx context.Context, w io.Writer) error {
 		defer wg.Done()
 		<-ctx.Done()
 		shutdownCtx := context.Background()
-		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
+		shutdownCtx, cancel = context.WithTimeout(shutdownCtx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
